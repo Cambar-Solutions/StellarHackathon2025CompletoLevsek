@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Avatar } from '../components/ui/Avatar'
@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Copy,
   CreditCard,
+  ArrowLeft,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -20,6 +21,7 @@ import { getPublicSiteInfo } from '../services/debtService'
 
 export function PublicView() {
   const { siteId } = useParams()
+  const navigate = useNavigate()
   const [businessData, setBusinessData] = useState(null)
   const [debtors, setDebtors] = useState([])
   const [loading, setLoading] = useState(true)
@@ -35,7 +37,9 @@ export function PublicView() {
       const data = response.data || response
 
       setBusinessData(data.site)
-      setDebtors(data.debtors || [])
+      // Filtrar solo deudores que tengan deuda pendiente
+      const activeDebtors = (data.debtors || []).filter(debtor => debtor.totalDebt > 0)
+      setDebtors(activeDebtors)
     } catch (error) {
       console.error('Error loading public data:', error)
       toast.error('Error al cargar información pública')
@@ -58,11 +62,11 @@ export function PublicView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-12 text-center">
-            <Globe className="w-16 h-16 text-gray-400 mx-auto mb-4 animate-spin" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <Globe className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4 animate-spin" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               Cargando...
             </h2>
           </CardContent>
@@ -73,14 +77,14 @@ export function PublicView() {
 
   if (!businessData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-12 text-center">
-            <Globe className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <Globe className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               Negocio no encontrado
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               La página pública que buscas no existe
             </p>
           </CardContent>
@@ -90,22 +94,31 @@ export function PublicView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/login')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft size={18} />
+                Volver
+              </Button>
               <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                 <ShieldCheck className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {businessData.name}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
-                  <Globe className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-gray-600">Vista Pública</span>
+                  <Globe className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-300">Vista Pública</span>
                 </div>
               </div>
             </div>
@@ -149,7 +162,7 @@ export function PublicView() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 Registro Público de Deudas
               </h2>
               <Badge variant="primary">{debtors.length} registros</Badge>
@@ -158,21 +171,21 @@ export function PublicView() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Deudor
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Wallet
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Saldo Pendiente
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Estado
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                       Acción
                     </th>
                   </tr>
@@ -180,7 +193,7 @@ export function PublicView() {
                 <tbody className="divide-y divide-gray-200">
                   {debtors.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan="5" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         No hay deudores registrados
                       </td>
                     </tr>
@@ -188,23 +201,23 @@ export function PublicView() {
                     debtors.map((debtor) => (
                       <tr
                         key={debtor.id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className="hover:bg-gray-50 dark:bg-gray-700 transition-colors"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <Avatar name={debtor.name} />
                             <div>
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-semibold text-gray-900 dark:text-white">
                                 {debtor.name}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                 {debtor.accountType}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <code className="text-xs text-gray-600 font-mono">
+                          <code className="text-xs text-gray-600 dark:text-gray-300 font-mono">
                             {debtor.walletAddress}
                           </code>
                         </td>
@@ -215,7 +228,7 @@ export function PublicView() {
                                 ? 'text-red-600'
                                 : debtor.totalDebt > 2000
                                 ? 'text-orange-600'
-                                : 'text-gray-900'
+                                : 'text-gray-900 dark:text-white'
                             }`}
                           >
                             {formatCurrency(debtor.totalDebt)}
@@ -245,7 +258,7 @@ export function PublicView() {
                               </Button>
                             </Link>
                           ) : (
-                            <span className="text-sm text-gray-400">Sin deuda</span>
+                            <span className="text-sm text-gray-400 dark:text-gray-500">Sin deuda</span>
                           )}
                         </td>
                       </tr>
@@ -259,8 +272,8 @@ export function PublicView() {
 
         {/* Footer Info */}
         <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-full shadow-sm">
-            <ShieldCheck className="w-4 h-4 text-green-600" />
+          <div className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-sm">
+            <ShieldCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
             <span>Datos verificados en Stellar Blockchain</span>
           </div>
         </div>

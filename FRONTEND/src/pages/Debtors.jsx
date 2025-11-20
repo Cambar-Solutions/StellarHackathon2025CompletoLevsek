@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDebt } from '../contexts/DebtContext'
+import { useConfirm } from '../hooks/useConfirm'
 import { Layout } from '../components/Layout'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -18,6 +19,7 @@ import toast from 'react-hot-toast'
 
 export function Debtors() {
   const { debtors, deleteDebtor } = useDebt()
+  const { confirm, ConfirmDialog } = useConfirm()
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredDebtors = debtors.filter((debtor) =>
@@ -40,21 +42,45 @@ export function Debtors() {
     })
   }
 
-  const handleDelete = (id, name) => {
-    if (window.confirm(`¿Estás seguro de eliminar a ${name}?`)) {
-      deleteDebtor(id)
+  const canDeleteDebtor = (debtor) => {
+    // No se puede eliminar si tiene deudas pendientes o pagos registrados
+    return debtor.totalDebt === 0 && debtor.payments.length === 0
+  }
+
+  const handleDelete = async (id, name, debtor) => {
+    if (!canDeleteDebtor(debtor)) {
+      toast.error('No se puede eliminar un deudor con deudas o pagos registrados')
+      return
+    }
+
+    const confirmed = await confirm({
+      title: 'Eliminar deudor',
+      message: `¿Estás seguro de eliminar a ${name}? Esta acción no se puede deshacer.`,
+      type: 'danger',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar'
+    })
+
+    if (confirmed) {
+      try {
+        await deleteDebtor(id)
+      } catch (error) {
+        // El error ya se muestra en DebtContext, solo logueamos aquí
+        console.error('Error en handleDelete:', error)
+      }
     }
   }
 
   return (
     <Layout>
+      <ConfirmDialog />
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Gestión de Deudores
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Administra todos los deudores de tu negocio
           </p>
         </div>
@@ -82,10 +108,10 @@ export function Debtors() {
       {filteredDebtors.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-gray-400 dark:text-gray-500" />
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               {searchQuery ? 'No se encontraron deudores' : 'No tienes deudores registrados'}
             </p>
             <Link to="/debtors/add">
@@ -109,24 +135,24 @@ export function Debtors() {
                   <div className="flex items-center gap-3">
                     <Avatar name={debtor.name} size="lg" />
                     <div>
-                      <h3 className="font-bold text-gray-900 text-lg">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg">
                         {debtor.name}
                       </h3>
-                      <p className="text-sm text-gray-500">{debtor.email}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{debtor.email}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Amount */}
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 mb-4">
-                  <p className="text-xs text-gray-600 mb-1">Saldo Pendiente</p>
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 mb-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">Saldo Pendiente</p>
                   <p
                     className={`text-2xl font-bold ${
                       debtor.totalDebt > 4000
-                        ? 'text-red-600'
+                        ? 'text-red-600 dark:text-red-400'
                         : debtor.totalDebt > 2000
-                        ? 'text-orange-600'
-                        : 'text-gray-900'
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-gray-900 dark:text-white'
                     }`}
                   >
                     {formatCurrency(debtor.totalDebt)}
@@ -136,7 +162,7 @@ export function Debtors() {
                 {/* Info */}
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Estado:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Estado:</span>
                     <Badge
                       variant={
                         debtor.status === 'verified' ? 'verified' : 'pending'
@@ -146,14 +172,14 @@ export function Debtors() {
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Pagos:</span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="text-gray-600 dark:text-gray-300">Pagos:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
                       {debtor.payments.length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Desde:</span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="text-gray-600 dark:text-gray-300">Desde:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
                       {formatDate(debtor.createdAt)}
                     </span>
                   </div>
@@ -174,8 +200,18 @@ export function Debtors() {
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => handleDelete(debtor.id, debtor.name)}
-                    className="flex items-center gap-2"
+                    onClick={() => handleDelete(debtor.id, debtor.name, debtor)}
+                    disabled={!canDeleteDebtor(debtor)}
+                    className={`flex items-center gap-2 ${
+                      !canDeleteDebtor(debtor)
+                        ? 'opacity-50 cursor-not-allowed'
+                        : ''
+                    }`}
+                    title={
+                      !canDeleteDebtor(debtor)
+                        ? 'No se puede eliminar: tiene deudas o pagos registrados'
+                        : 'Eliminar deudor'
+                    }
                   >
                     <Trash2 size={16} />
                   </Button>

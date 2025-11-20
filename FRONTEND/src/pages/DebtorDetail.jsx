@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDebt } from '../contexts/DebtContext'
+import { useConfirm } from '../hooks/useConfirm'
 import { Layout } from '../components/Layout'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -27,6 +28,7 @@ export function DebtorDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { debtors, addPayment, approvePayment, rejectPayment } = useDebt()
+  const { confirm, ConfirmDialog } = useConfirm()
   const [paymentAmount, setPaymentAmount] = useState('')
   const [showPaymentForm, setShowPaymentForm] = useState(false)
 
@@ -38,7 +40,7 @@ export function DebtorDetail() {
     return (
       <Layout>
         <div className="text-center py-12">
-          <p className="text-gray-600">Deudor no encontrado</p>
+          <p className="text-gray-600 dark:text-gray-300">Deudor no encontrado</p>
           <Button
             variant="primary"
             onClick={() => navigate('/dashboard')}
@@ -88,14 +90,30 @@ export function DebtorDetail() {
     setShowPaymentForm(false)
   }
 
-  const handleApprovePayment = (paymentId) => {
-    if (window.confirm('¿Aprobar este pago?')) {
+  const handleApprovePayment = async (paymentId, amount) => {
+    const confirmed = await confirm({
+      title: 'Aprobar pago',
+      message: `¿Confirmas que quieres aprobar este pago de ${formatCurrency(amount)}?`,
+      type: 'success',
+      confirmText: 'Aprobar',
+      cancelText: 'Cancelar'
+    })
+
+    if (confirmed) {
       approvePayment(debtor.id, paymentId)
     }
   }
 
-  const handleRejectPayment = (paymentId) => {
-    if (window.confirm('¿Rechazar y eliminar este pago?')) {
+  const handleRejectPayment = async (paymentId) => {
+    const confirmed = await confirm({
+      title: 'Rechazar pago',
+      message: '¿Estás seguro de rechazar este pago? Esta acción no se puede deshacer.',
+      type: 'danger',
+      confirmText: 'Rechazar',
+      cancelText: 'Cancelar'
+    })
+
+    if (confirmed) {
       rejectPayment(debtor.id, paymentId)
     }
   }
@@ -106,6 +124,7 @@ export function DebtorDetail() {
 
   return (
     <Layout>
+      <ConfirmDialog />
       <div className="max-w-4xl mx-auto">
         <Button
           variant="ghost"
@@ -124,7 +143,7 @@ export function DebtorDetail() {
               <div className="flex items-center gap-4">
                 <Avatar name={debtor.name} size="xl" />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {debtor.name}
                   </h1>
                   <Badge
@@ -164,7 +183,7 @@ export function DebtorDetail() {
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-sm text-gray-600 mb-1">Total Pagado</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Total Pagado</p>
               <p className="text-2xl font-bold text-green-600">
                 {formatCurrency(totalPaid)}
               </p>
@@ -172,7 +191,7 @@ export function DebtorDetail() {
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-sm text-gray-600 mb-1">Pagos Registrados</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Pagos Registrados</p>
               <p className="text-2xl font-bold text-blue-600">
                 {debtor.payments.length}
               </p>
@@ -180,8 +199,8 @@ export function DebtorDetail() {
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-sm text-gray-600 mb-1">Cuenta desde</p>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Cuenta desde</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
                 {formatDate(debtor.createdAt)}
               </p>
             </CardContent>
@@ -205,7 +224,7 @@ export function DebtorDetail() {
         {showPaymentForm && (
           <Card className="mb-6">
             <CardHeader>
-              <h3 className="text-lg font-bold text-gray-900">Registrar Nuevo Pago</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registrar Nuevo Pago</h3>
             </CardHeader>
             <CardContent className="p-6">
               <form onSubmit={handleAddPayment} className="space-y-4">
@@ -221,7 +240,7 @@ export function DebtorDetail() {
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Máximo: {formatCurrency(debtor.totalDebt)}
                   </p>
                 </div>
@@ -247,8 +266,8 @@ export function DebtorDetail() {
         {debtor.debts && debtor.debts.length > 0 && (
           <Card className="mb-6">
             <CardHeader>
-              <h3 className="text-lg font-bold text-gray-900">Desglose de Deudas</h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Desglose de Deudas</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                 {debtor.debts.length} {debtor.debts.length === 1 ? 'deuda registrada' : 'deudas registradas'}
               </p>
             </CardHeader>
@@ -257,12 +276,12 @@ export function DebtorDetail() {
                 {debtor.debts.map((debt) => (
                   <div
                     key={debt.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-6 hover:bg-gray-50 dark:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-gray-900">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">
                             {debt.description || 'Sin descripción'}
                           </h4>
                           <Badge
@@ -285,25 +304,25 @@ export function DebtorDetail() {
                               : debt.status}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-500 mb-3">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                           Registrada el {formatDate(debt.createdAt)}
                         </p>
 
                         <div className="grid grid-cols-3 gap-4 mt-3">
                           <div className="bg-blue-50 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 mb-1">Monto Total</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">Monto Total</p>
                             <p className="text-lg font-bold text-blue-600">
                               {formatCurrency(debt.totalAmount)}
                             </p>
                           </div>
                           <div className="bg-green-50 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 mb-1">Pagado</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">Pagado</p>
                             <p className="text-lg font-bold text-green-600">
                               {formatCurrency(debt.paidAmount)}
                             </p>
                           </div>
                           <div className="bg-orange-50 rounded-lg p-3">
-                            <p className="text-xs text-gray-600 mb-1">Pendiente</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">Pendiente</p>
                             <p className="text-lg font-bold text-orange-600">
                               {formatCurrency(debt.pendingAmount)}
                             </p>
@@ -312,12 +331,12 @@ export function DebtorDetail() {
 
                         {debt.stellarTxHash && (
                           <div className="mt-3 flex items-center gap-2">
-                            <code className="text-xs text-gray-500 font-mono">
+                            <code className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                               TX: {debt.stellarTxHash.substring(0, 16)}...
                             </code>
                             <button
                               onClick={() => copyToClipboard(debt.stellarTxHash)}
-                              className="text-gray-400 hover:text-gray-600"
+                              className="text-gray-400 hover:text-gray-600 dark:text-gray-300"
                             >
                               <Copy size={14} />
                             </button>
@@ -335,11 +354,11 @@ export function DebtorDetail() {
         {/* Payment History */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-bold text-gray-900">Historial de Pagos</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Historial de Pagos</h3>
           </CardHeader>
           <CardContent className="p-0">
             {debtor.payments.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
+              <div className="p-12 text-center text-gray-500 dark:text-gray-400">
                 No hay pagos registrados
               </div>
             ) : (
@@ -347,7 +366,7 @@ export function DebtorDetail() {
                 {debtor.payments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-6 hover:bg-gray-50 dark:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-4">
@@ -357,7 +376,7 @@ export function DebtorDetail() {
                               ? 'bg-green-100'
                               : payment.status === 'reviewing'
                               ? 'bg-orange-100'
-                              : 'bg-gray-100'
+                              : 'bg-gray-100 dark:bg-gray-700'
                           }`}
                         >
                           {payment.status === 'verified' ? (
@@ -365,14 +384,14 @@ export function DebtorDetail() {
                           ) : payment.status === 'reviewing' ? (
                             <Clock className="w-6 h-6 text-orange-600" />
                           ) : (
-                            <AlertCircle className="w-6 h-6 text-gray-600" />
+                            <AlertCircle className="w-6 h-6 text-gray-600 dark:text-gray-300" />
                           )}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-gray-900 dark:text-white">
                             {formatCurrency(payment.amount)}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {formatDate(payment.date)}
                           </p>
                         </div>
@@ -394,12 +413,12 @@ export function DebtorDetail() {
                             : 'Pendiente'}
                         </Badge>
                         <div className="flex items-center gap-2 mt-2">
-                          <code className="text-xs text-gray-500 font-mono">
+                          <code className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                             TX: {payment.txHash}
                           </code>
                           <button
                             onClick={() => copyToClipboard(payment.txHash)}
-                            className="text-gray-400 hover:text-gray-600"
+                            className="text-gray-400 hover:text-gray-600 dark:text-gray-300"
                           >
                             <Copy size={14} />
                           </button>
@@ -409,11 +428,11 @@ export function DebtorDetail() {
 
                     {/* Botones de aprobación/rechazo para pagos en revisión */}
                     {payment.status === 'reviewing' && (
-                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <Button
                           variant="success"
                           size="sm"
-                          onClick={() => handleApprovePayment(payment.id)}
+                          onClick={() => handleApprovePayment(payment.id, payment.amount)}
                           className="flex-1 flex items-center justify-center gap-2"
                         >
                           <Check size={16} />
@@ -444,17 +463,17 @@ export function DebtorDetail() {
 function InfoItem({ icon, label, value, copyable, onCopy }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 flex-shrink-0">
+      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-300 flex-shrink-0">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
         <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-gray-900 truncate">{value}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{value}</p>
           {copyable && (
             <button
               onClick={onCopy}
-              className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-300 flex-shrink-0"
             >
               <Copy size={14} />
             </button>

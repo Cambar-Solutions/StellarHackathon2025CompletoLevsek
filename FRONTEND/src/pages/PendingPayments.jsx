@@ -1,4 +1,5 @@
 import { useDebt } from '../contexts/DebtContext'
+import { useConfirm } from '../hooks/useConfirm'
 import { Layout } from '../components/Layout'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -18,6 +19,7 @@ import toast from 'react-hot-toast'
 
 export function PendingPayments() {
   const { debtors, approvePayment, rejectPayment } = useDebt()
+  const { confirm, ConfirmDialog } = useConfirm()
 
   // Obtener todos los pagos pendientes de revisión
   const pendingPayments = debtors
@@ -53,31 +55,48 @@ export function PendingPayments() {
     toast.success('Copiado al portapapeles')
   }
 
-  const handleApprove = (debtorId, paymentId) => {
-    if (window.confirm('¿Aprobar este pago?')) {
+  const handleApprove = async (debtorId, paymentId, amount) => {
+    const confirmed = await confirm({
+      title: 'Aprobar pago',
+      message: `¿Confirmas que quieres aprobar este pago de ${formatCurrency(amount)}? El saldo del deudor se actualizará automáticamente.`,
+      type: 'success',
+      confirmText: 'Aprobar',
+      cancelText: 'Cancelar'
+    })
+
+    if (confirmed) {
       approvePayment(debtorId, paymentId)
     }
   }
 
-  const handleReject = (debtorId, paymentId) => {
-    if (window.confirm('¿Rechazar y eliminar este pago?')) {
+  const handleReject = async (debtorId, paymentId) => {
+    const confirmed = await confirm({
+      title: 'Rechazar pago',
+      message: '¿Estás seguro de rechazar este pago? Esta acción no se puede deshacer.',
+      type: 'danger',
+      confirmText: 'Rechazar',
+      cancelText: 'Cancelar'
+    })
+
+    if (confirmed) {
       rejectPayment(debtorId, paymentId)
     }
   }
 
   return (
     <Layout>
+      <ConfirmDialog />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
             <Clock className="w-6 h-6 text-orange-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Pagos Pendientes de Revisión
           </h1>
         </div>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           Revisa y aprueba los pagos realizados por tus deudores
         </p>
       </div>
@@ -103,13 +122,13 @@ export function PendingPayments() {
       {pendingPayments.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Clock className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Clock className="w-8 h-8 text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               No hay pagos pendientes
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Todos los pagos han sido revisados
             </p>
           </CardContent>
@@ -126,10 +145,10 @@ export function PendingPayments() {
                       <div className="flex items-center gap-3">
                         <Avatar name={payment.debtor.name} size="lg" />
                         <div>
-                          <h3 className="font-bold text-gray-900 text-lg">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-lg">
                             {payment.debtor.name}
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             {payment.debtor.email}
                           </p>
                         </div>
@@ -150,14 +169,14 @@ export function PendingPayments() {
                         </p>
                       </div>
 
-                      <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <Calendar className="w-4 h-4 text-gray-600" />
-                          <p className="text-xs text-gray-600 font-medium">
+                          <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                          <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">
                             Fecha de Pago
                           </p>
                         </div>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
                           {formatDate(payment.date)}
                         </p>
                       </div>
@@ -202,13 +221,13 @@ export function PendingPayments() {
 
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Deuda actual del cliente:</span>
-                        <span className="font-bold text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-300">Deuda actual del cliente:</span>
+                        <span className="font-bold text-gray-900 dark:text-white">
                           {formatCurrency(payment.debtor.totalDebt)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm mt-1">
-                        <span className="text-gray-600">Después del pago:</span>
+                        <span className="text-gray-600 dark:text-gray-300">Después del pago:</span>
                         <span className="font-bold text-green-600">
                           {formatCurrency(payment.debtor.totalDebt - payment.amount)}
                         </span>
@@ -221,7 +240,7 @@ export function PendingPayments() {
                     <Button
                       variant="success"
                       size="lg"
-                      onClick={() => handleApprove(payment.debtor.id, payment.id)}
+                      onClick={() => handleApprove(payment.debtor.id, payment.id, payment.amount)}
                       className="flex items-center justify-center gap-2"
                     >
                       <Check size={20} />
