@@ -13,12 +13,14 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DebtModule } from './modules/debt/debt.module';
 import { StellarModule } from './modules/stellar/stellar.module';
+import { PendingPaymentModule } from './modules/pending-payment/pending-payment.module';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
 
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(), 
+    ScheduleModule.forRoot(),
     typeOrmConfig,
     AuthModule,
     UserModule,
@@ -26,6 +28,8 @@ import { StellarModule } from './modules/stellar/stellar.module';
     CustomerModule,
     DebtModule,
     StellarModule,
+    PendingPaymentModule,
+    ChatbotModule,
   ],
   controllers: [AppController],
   providers: [AppService, CustomLoggerService,
